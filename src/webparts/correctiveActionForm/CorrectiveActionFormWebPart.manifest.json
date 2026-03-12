@@ -1,0 +1,25 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx/client-side-web-part-manifest.schema.json",
+  "id": "8c3f5a4b-7e2d-4f1a-9b3c-6d5e8a9f1c2b",
+  "alias": "CorrectiveActionFormWebPart",
+  "componentType": "WebPart",
+  "version": "*",
+  "manifestVersion": 2,
+  "requiresCustomScript": false,
+  "supportedHosts": ["SharePointWebPart", "SharePointFullPage"],
+  "supportsThemeVariants": true,
+  "preconfiguredEntries": [
+    {
+      "groupId": "5c03119e-3074-46fd-976b-c60198311f70",
+      "group": { "default": "Advanced" },
+      "title": { "default": "Corrective Action Form" },
+      "description": { "default": "Create and manage Corrective Actions with auto-population from Non Conformities" },
+      "officeFabricIconFontName": "EditNote",
+      "properties": {
+        "title": "Corrective Actions",
+        "defaultView": "dashboard",
+        "showDashboard": true
+      }
+    }
+  ]
+}

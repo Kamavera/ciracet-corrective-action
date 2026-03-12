@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corrective Action Form - Preview</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f3f2f1;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #323130;
+            border-bottom: 2px solid #0078d4;
+            padding-bottom: 10px;
+        }
+        .info-box {
+            background: #f3f2f1;
+            border-left: 4px solid #0078d4;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .warning-box {
+            background: #fff4ce;
+            border-left: 4px solid #ffaa44;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .instructions {
+            background: #e8f4fd;
+            border-left: 4px solid #0078d4;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        code {
+            background: #f3f2f1;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        .command {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .option {
+            background: white;
+            border: 1px solid #edebe9;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .option h3 {
+            margin-top: 0;
+            color: #0078d4;
+        }
+        ul {
+            line-height: 1.8;
+        }
+        .mockup {
+            border: 2px solid #0078d4;
+            padding: 20px;
+            margin: 20px 0;
+            background: #fafafa;
+        }
+        .mockup-header {
+            background: #0078d4;
+            color: white;
+            padding: 10px;
+            margin: -20px -20px 20px -20px;
+            font-weight: bold;
+        }
+        .mockup-section {
+            border: 1px solid #edebe9;
+            padding: 15px;
+            margin: 10px 0;
+            background: white;
+        }
+        .field-group {
+            margin: 10px 0;
+        }
+        .field-label {
+            font-weight: 600;
+            color: #323130;
+            margin-bottom: 5px;
+        }
+        .field-input {
+            border: 1px solid #8a8886;
+            padding: 8px;
+            width: 100%;
+            box-sizing: border-box;
+            background: #f3f2f1;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin: 5px;
+        }
+        .status-open { background: #d13438; color: white; }
+        .status-progress { background: #ffaa44; color: white; }
+        .status-completed { background: #107c10; color: white; }
+        .status-closed { background: #0078d4; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Corrective Action Form - Preview Guide</h1>
+
+        <div class="info-box">
+            <strong>📍 You're viewing a static preview page</strong><br>
+            To see the actual working form with SharePoint data, follow the instructions below.
+        </div>
+
+        <h2>🚀 How to View the Real Form</h2>
+
+        <div class="option">
+            <h3>Option 1: Local Workbench (No SharePoint data)</h3>
+            <p>View the form UI locally without SharePoint connection:</p>
+            <div class="command">
+$ nvm use 18<br>
+$ gulp trust-dev-cert<br>
+$ gulp serve --nobrowser<br>
+<br>
+# Then open in browser:<br>
+https://localhost:4321/temp/workbench.html
+            </div>
+            <p>✅ Fast preview of UI<br>❌ No real data (will show errors)</p>
+        </div>
+
+        <div class="option">
+            <h3>Option 2: SharePoint Hosted Workbench (Best for testing)</h3>
+            <p>Test with real SharePoint lists:</p>
+            <div class="command">
+$ nvm use 18<br>
+$ gulp trust-dev-cert<br>
+$ npm run serve --nobrowser<br>
+<br>
+# Then navigate to:<br>
+https://YOUR-TENANT.sharepoint.com/_layouts/15/workbench.aspx
+            </div>
+            <p>✅ Real SharePoint data<br>✅ Full functionality<br>✅ Code runs locally (hot reload)</p>
+        </div>
+
+        <div class="option">
+            <h3>Option 3: Add to SharePoint Page</h3>
+            <p>Deploy to a real SharePoint page:</p>
+            <div class="command">
+$ nvm use 18<br>
+$ npm run serve<br>
+<br>
+# Browser opens automatically, then:<br>
+# 1. Edit page<br>
+# 2. Click + (add section)<br>
+# 3. Search "Corrective Action Form"<br>
+# 4. Add to page
+            </div>
+            <p>✅ Production-like environment<br>✅ Full functionality</p>
+        </div>
+
+        <h2>🎨 Visual Preview of What You'll See</h2>
+
+        <div class="mockup">
+            <div class="mockup-header">My Corrective Actions - Dashboard</div>
+
+            <div class="mockup-section">
+                <strong>🔍 Search:</strong>
+                <input type="text" class="field-input" placeholder="Search by Title, Status, Reference ID..." disabled>
+            </div>
+
+            <div class="mockup-section">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f3f2f1;">
+                            <th style="padding: 10px; text-align: left;">Title</th>
+                            <th style="padding: 10px; text-align: left;">Status</th>
+                            <th style="padding: 10px; text-align: left;">Ref ID</th>
+                            <th style="padding: 10px; text-align: left;">NC Report #</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding: 10px;">Work Orders Abiertos</td>
+                            <td style="padding: 10px;"><span class="status-badge status-progress">In Progress</span></td>
+                            <td style="padding: 10px;">AC 2024-03</td>
+                            <td style="padding: 10px;">NC 2024-03</td>
+                        </tr>
+                        <tr style="background: #fafafa;">
+                            <td style="padding: 10px;">Ventas de Piezas</td>
+                            <td style="padding: 10px;"><span class="status-badge status-open">Open</span></td>
+                            <td style="padding: 10px;">AC 2024-05</td>
+                            <td style="padding: 10px;">NC 2024-05</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="mockup">
+            <div class="mockup-header">New Corrective Action - Form</div>
+
+            <div class="mockup-section">
+                <strong>Basic Information</strong>
+
+                <div class="field-group">
+                    <div class="field-label">NC Report Number: *</div>
+                    <select class="field-input" disabled>
+                        <option>Select a Non Conformity...</option>
+                        <option>NC 2024-03 - Work Orders Abiertos</option>
+                        <option>NC 2024-05 - Incumplimiento Ventas</option>
+                    </select>
+                </div>
+
+                <div class="field-group">
+                    <div class="field-label">Corrective Action Reference ID: *</div>
+                    <input type="text" class="field-input" value="AC 2024-03" disabled>
+                    <small>✨ Auto-generated from NC ID</small>
+                </div>
+
+                <div class="field-group">
+                    <div class="field-label">Title: *</div>
+                    <input type="text" class="field-input" value="Work Orders Abiertos" disabled>
+                    <small>✨ Auto-populated from NC</small>
+                </div>
+            </div>
+
+            <div class="mockup-section">
+                <strong>Issue Description & Analysis</strong> (Read-only, auto-populated)
+
+                <div class="field-group">
+                    <div class="field-label">Issue Description:</div>
+                    <textarea class="field-input" rows="3" disabled>En el sistema CAMS existen muchos work orders abiertos con más de 60 dias...</textarea>
+                </div>
+
+                <div class="field-group">
+                    <div class="field-label">Root Cause:</div>
+                    <textarea class="field-input" rows="2" disabled>Personal debe sacar tiempo para dedicar al seguimiento...</textarea>
+                </div>
+            </div>
+
+            <div class="mockup-section">
+                <strong>Action Plan</strong> (User fills in)
+
+                <div class="field-group">
+                    <div class="field-label">Action Plan Step #1:</div>
+                    <textarea class="field-input" rows="2" placeholder="Describe action step 1..." disabled></textarea>
+                </div>
+
+                <div class="field-group">
+                    <div class="field-label">Responsible Person:</div>
+                    <input type="text" class="field-input" placeholder="Enter name" disabled>
+                </div>
+            </div>
+        </div>
+
+        <h2>📋 Status Indicators</h2>
+        <p>The dashboard uses color-coded status badges:</p>
+        <span class="status-badge status-open">Open</span>
+        <span class="status-badge status-progress">In Progress</span>
+        <span class="status-badge status-completed">Completed</span>
+        <span class="status-badge status-closed">Closed</span>
+
+        <div class="instructions">
+            <h3>🎯 Recommended: Use SharePoint Hosted Workbench</h3>
+            <p>For the best preview experience with real data:</p>
+            <ol>
+                <li>Run: <code>npm run serve --nobrowser</code></li>
+                <li>Open: <code>https://YOUR-SHAREPOINT-SITE/_layouts/15/workbench.aspx</code></li>
+                <li>Click the <strong>+</strong> icon</li>
+                <li>Add "Corrective Action Form"</li>
+                <li>Test with real data from your lists! 🚀</li>
+            </ol>
+        </div>
+
+        <div class="warning-box">
+            <strong>⚠️ Important Notes:</strong>
+            <ul>
+                <li>The local workbench (<code>localhost:4321/temp/workbench.html</code>) won't connect to SharePoint</li>
+                <li>For testing with real data, use the SharePoint-hosted workbench</li>
+                <li>Make sure your SharePoint lists exist: "Non Conformities" and "Corrective Actions"</li>
+                <li>The form will show errors if lists don't exist or columns are missing</li>
+            </ul>
+        </div>
+
+        <h2>📝 Next Steps</h2>
+        <ol>
+            <li>✅ Node v18 is installed and active</li>
+            <li>✅ Project builds successfully</li>
+            <li>⏳ Trust the dev certificate: <code>gulp trust-dev-cert</code></li>
+            <li>⏳ Start the server: <code>npm run serve</code></li>
+            <li>⏳ View in workbench or SharePoint page</li>
+        </ol>
+
+        <p style="text-align: center; margin-top: 40px; color: #605e5c;">
+            <strong>Ready to see the real thing?</strong><br>
+            Run: <code>gulp trust-dev-cert</code> then <code>npm run serve</code>
+        </p>
+    </div>
+</body>
+</html>

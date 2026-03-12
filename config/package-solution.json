@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "corrective-action-form-client-side-solution",
+    "id": "7b4e5c3d-8f2a-4a1b-9c5e-3d6f7a8b9c0d",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "Your Organization",
+      "websiteUrl": "https://www.yourorganization.com",
+      "privacyUrl": "https://www.yourorganization.com/privacy",
+      "termsOfUseUrl": "https://www.yourorganization.com/terms",
+      "mpnId": "Undefined-1.18.2"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "Corrective Action Form with auto-population from Non Conformities"
+      },
+      "longDescription": {
+        "default": "A comprehensive SharePoint web part for creating and managing Corrective Actions with automatic data population from Non Conformities list"
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "corrective-action-form-client-side-solution Feature",
+        "description": "The feature that activates elements of the corrective-action-form-client-side-solution solution.",
+        "id": "9a8b7c6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d",
+        "version": "1.0.0.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/corrective-action-form.sppkg"
+  }
+}

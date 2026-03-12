@@ -1,0 +1,19 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "corrective-action-form-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/correctiveActionForm/CorrectiveActionFormWebPart.js",
+          "manifest": "./src/webparts/correctiveActionForm/CorrectiveActionFormWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "CorrectiveActionFormWebPartStrings": "lib/webparts/correctiveActionForm/loc/{locale}.js",
+    "ControlStrings": "node_modules/@pnp/spfx-controls-react/lib/loc/{locale}.js"
+  }
+}
