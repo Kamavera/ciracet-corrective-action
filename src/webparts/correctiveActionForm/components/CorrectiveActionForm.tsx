@@ -20,7 +20,7 @@ import {
 import { PeoplePicker, PrincipalType } from '@pnp/spfx-controls-react/lib/PeoplePicker';
 import { WebPartContext } from '@microsoft/sp-webpart-base';
 import { SharePointService } from '../services/SharePointService';
-import { ICorrectiveAction, StatusOptions, CAPAStatusOptions, IDropdownOption } from '../models/ICorrectiveAction';
+import { ICorrectiveAction, CAPAStatusOptions, IDropdownOption } from '../models/ICorrectiveAction';
 import {
   FormTextField,
   FormDropdown,
@@ -47,7 +47,7 @@ const yesNoOptions: IChoiceGroupOption[] = [
 export const CorrectiveActionForm: React.FC<ICorrectiveActionFormProps> = (props) => {
   const [formData, setFormData] = React.useState<ICorrectiveAction>({
     Title: '',
-    Status: 'Not Started',
+    Status: 'Abierta',
     ReferenceID: '',
     NCReportNumber: '',
     PlaceOfNC: '',
@@ -90,7 +90,7 @@ export const CorrectiveActionForm: React.FC<ICorrectiveActionFormProps> = (props
     QAAuditor: '',
     Comments: '',
     CCList: '',
-    CAPAStatus: 'Open',
+    CAPAStatus: 'Abierta',
     IsRiskAlreadyIdentified: '',
     UpdateRiskAnalysisMatrix: ''
   });
@@ -277,7 +277,7 @@ export const CorrectiveActionForm: React.FC<ICorrectiveActionFormProps> = (props
             <FormDropdown
               label="Status"
               selectedKey={formData.Status}
-              options={StatusOptions}
+              options={CAPAStatusOptions}
               onChange={(value) => updateField('Status', value)}
               required={true}
             />
