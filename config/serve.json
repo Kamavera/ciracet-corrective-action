@@ -4,15 +4,7 @@
   "https": true,
   "serveConfigurations": {
     "default": {
-      "pageUrl": "https://ciracetcorp.sharepoint.com/sites/CapaCiracet",
-      "customActions": {
-        "8c3f5a4b-7e2d-4f1a-9b3c-6d5e8a9f1c2b": {
-          "location": "ClientSideExtension.ApplicationCustomizer",
-          "properties": {
-            "testMessage": "Test message"
-          }
-        }
-      }
+      "pageUrl": "https://ciracetcorp.sharepoint.com/sites/CapaCiracet/_layouts/15/workbench.aspx"
     }
   }
 }
