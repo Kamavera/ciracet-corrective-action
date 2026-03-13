@@ -12,7 +12,10 @@ import {
   Dialog,
   DialogType,
   DialogFooter,
-  IDropdownOption as IFluentDropdownOption
+  IDropdownOption as IFluentDropdownOption,
+  Link,
+  Icon,
+  Text
 } from '@fluentui/react';
 import { PeoplePicker, PrincipalType } from '@pnp/spfx-controls-react/lib/PeoplePicker';
 import { WebPartContext } from '@microsoft/sp-webpart-base';
@@ -25,9 +28,11 @@ import {
   ProcessOptions,
   SeverityOptions,
   NC_VALID_TRANSITIONS,
-  NCStatus
+  NCStatus,
+  IAttachment
 } from '../models/ICorrectiveAction';
 import { FormTextField, FormDropdown, FormDatePicker } from './FormFields';
+import { HistoryPanel } from './HistoryPanel';
 
 export interface INonConformityFormProps {
   context: WebPartContext;
@@ -74,6 +79,12 @@ export const NonConformityForm: React.FC<INonConformityFormProps> = (props) => {
   const [success, setSuccess] = React.useState<string>('');
   const [showConfirmDialog, setShowConfirmDialog] = React.useState<boolean>(false);
   const [isEditMode, setIsEditMode] = React.useState<boolean>(false);
+  const [savedItemId, setSavedItemId] = React.useState<number | undefined>(props.itemId);
+  const [historyRefreshKey, setHistoryRefreshKey] = React.useState<number>(0);
+  // Phase 3 — Attachments
+  const [attachments, setAttachments] = React.useState<IAttachment[]>([]);
+  const [uploadingFile, setUploadingFile] = React.useState<boolean>(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const spService = React.useMemo(() => new SharePointService(props.context), [props.context]);
 
@@ -87,13 +98,18 @@ export const NonConformityForm: React.FC<INonConformityFormProps> = (props) => {
     setLoading(true);
     setError('');
     try {
-      const item = await spService.getNonConformityById(props.itemId);
+      const [item, files] = await Promise.all([
+        spService.getNonConformityById(props.itemId),
+        spService.getAttachments('Non Conformities', props.itemId)
+      ]);
       if (item) {
         setFormData(item);
         setIsEditMode(true);
+        setSavedItemId(props.itemId);
       } else {
         setError('No Conformidad no encontrada');
       }
+      setAttachments(files);
     } catch (err) {
       setError(err.message || 'Error al cargar los datos');
     } finally {
@@ -147,11 +163,45 @@ export const NonConformityForm: React.FC<INonConformityFormProps> = (props) => {
 
     setSaving(true);
     try {
+      const currentUser = props.context.pageContext.user.displayName || 'Usuario';
       if (isEditMode && props.itemId) {
+        // Capture old status for history entry
+        const oldItem = await spService.getNonConformityById(props.itemId);
+        const oldStatus = oldItem ? oldItem.Status : '';
+
         await spService.updateNonConformity(props.itemId, formData);
+
+        // Record history
+        const changeDesc = oldStatus !== formData.Status
+          ? `Estado cambiado: ${oldStatus} → ${formData.Status}`
+          : 'Registro actualizado';
+        await spService.addHistoryEntry({
+          NCId: props.itemId,
+          Change: changeDesc,
+          User: currentUser,
+          Date: new Date(),
+          Comments: formData.Comments || ''
+        });
+
         setSuccess('No Conformidad actualizada exitosamente');
+        setHistoryRefreshKey(k => k + 1);
       } else {
-        await spService.createNonConformity(formData);
+        const newId = await spService.createNonConformity(formData);
+        setSavedItemId(newId);
+        setIsEditMode(true);
+
+        // Record creation history
+        await spService.addHistoryEntry({
+          NCId: newId,
+          Change: 'Registro creado — Estado: Abierta',
+          User: currentUser,
+          Date: new Date(),
+          Comments: formData.Comments || ''
+        });
+
+        // Load attachments slot for newly created item
+        setAttachments([]);
+        setHistoryRefreshKey(k => k + 1);
         setSuccess('No Conformidad creada exitosamente');
       }
 
@@ -172,6 +222,37 @@ export const NonConformityForm: React.FC<INonConformityFormProps> = (props) => {
       </Stack>
     );
   }
+
+  // ── Phase 3: Attachment handler ──────────────────────────────────────────
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const itemId = savedItemId || props.itemId;
+    if (!itemId) {
+      setError('Guarda el registro primero antes de adjuntar archivos');
+      return;
+    }
+
+    setUploadingFile(true);
+    setError('');
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const buffer = await file.arrayBuffer();
+        await spService.addAttachment('Non Conformities', itemId, file.name, buffer);
+      }
+      const updated = await spService.getAttachments('Non Conformities', itemId);
+      setAttachments(updated);
+    } catch (err) {
+      setError(err.message || 'Error al subir el archivo');
+    } finally {
+      setUploadingFile(false);
+      // Reset file input so the same file can be re-uploaded if needed
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
 
   return (
     <Stack tokens={stackTokens} styles={{ root: { padding: 20, maxWidth: 1200 } }}>
@@ -408,6 +489,66 @@ export const NonConformityForm: React.FC<INonConformityFormProps> = (props) => {
         multiline={true}
         rows={3}
       />
+
+      {/* ── Archivos Adjuntos ────────────────────────────────────────────────── */}
+      <Separator>Archivos Adjuntos</Separator>
+      <Stack tokens={sectionTokens}>
+        {!(savedItemId || props.itemId) && (
+          <Text styles={{ root: { color: '#605e5c', fontStyle: 'italic' } }}>
+            Guarda el registro primero para poder adjuntar archivos.
+          </Text>
+        )}
+        {(savedItemId || props.itemId) && (
+          <>
+            <Stack horizontal tokens={{ childrenGap: 8 }} verticalAlign="center">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                style={{ display: 'none' }}
+                onChange={handleFileUpload}
+              />
+              <DefaultButton
+                iconProps={{ iconName: 'Attach' }}
+                text="Adjuntar archivo"
+                onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                disabled={uploadingFile || saving}
+              />
+              {uploadingFile && <Spinner size={SpinnerSize.small} label="Subiendo..." />}
+            </Stack>
+
+            {attachments.length > 0 && (
+              <Stack tokens={{ childrenGap: 6 }}>
+                {attachments.map((att, idx) => (
+                  <Stack key={idx} horizontal tokens={{ childrenGap: 8 }} verticalAlign="center">
+                    <Icon iconName="Attach" styles={{ root: { color: '#0078d4' } }} />
+                    <Link href={att.ServerRelativeUrl} target="_blank">
+                      {att.FileName}
+                    </Link>
+                  </Stack>
+                ))}
+              </Stack>
+            )}
+            {attachments.length === 0 && !uploadingFile && (
+              <Text styles={{ root: { color: '#605e5c', fontStyle: 'italic' } }}>
+                Sin archivos adjuntos.
+              </Text>
+            )}
+          </>
+        )}
+      </Stack>
+
+      {/* ── Historial de Cambios ─────────────────────────────────────────────── */}
+      {isEditMode && (savedItemId || props.itemId) && (
+        <>
+          <Separator>Historial de Cambios</Separator>
+          <HistoryPanel
+            context={props.context}
+            ncId={savedItemId || props.itemId}
+            refreshKey={historyRefreshKey}
+          />
+        </>
+      )}
 
       {/* ── Botones ─────────────────────────────────────────────────────────── */}
       <Stack horizontal tokens={sectionTokens} horizontalAlign="end" styles={{ root: { marginTop: 20 } }}>

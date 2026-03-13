@@ -15,12 +15,15 @@ import {
   Dropdown,
   IDropdownOption as IFluentDropdownOption,
   ChoiceGroup,
-  IChoiceGroupOption
+  IChoiceGroupOption,
+  Link,
+  Icon,
+  Text
 } from '@fluentui/react';
 import { PeoplePicker, PrincipalType } from '@pnp/spfx-controls-react/lib/PeoplePicker';
 import { WebPartContext } from '@microsoft/sp-webpart-base';
 import { SharePointService } from '../services/SharePointService';
-import { ICorrectiveAction, CAPAStatusOptions, IDropdownOption } from '../models/ICorrectiveAction';
+import { ICorrectiveAction, CAPAStatusOptions, IDropdownOption, IAttachment } from '../models/ICorrectiveAction';
 import {
   FormTextField,
   FormDropdown,
@@ -43,6 +46,13 @@ const yesNoOptions: IChoiceGroupOption[] = [
   { key: 'YES', text: 'YES' },
   { key: 'NO', text: 'NO' }
 ];
+
+/** Valid CAPA next-state transitions (Phase 6) */
+const CAPA_VALID_TRANSITIONS: Record<string, string[]> = {
+  'Abierta':    ['En proceso'],
+  'En proceso': ['Cerrada'],
+  'Cerrada':    []
+};
 
 export const CorrectiveActionForm: React.FC<ICorrectiveActionFormProps> = (props) => {
   const [formData, setFormData] = React.useState<ICorrectiveAction>({
@@ -102,6 +112,11 @@ export const CorrectiveActionForm: React.FC<ICorrectiveActionFormProps> = (props
   const [success, setSuccess] = React.useState<string>('');
   const [showConfirmDialog, setShowConfirmDialog] = React.useState<boolean>(false);
   const [isEditMode, setIsEditMode] = React.useState<boolean>(false);
+  const [savedItemId, setSavedItemId] = React.useState<number | undefined>(props.itemId);
+  // Phase 3 — Attachments
+  const [attachments, setAttachments] = React.useState<IAttachment[]>([]);
+  const [uploadingFile, setUploadingFile] = React.useState<boolean>(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const spService = React.useMemo(() => new SharePointService(props.context), [props.context]);
 
@@ -118,13 +133,18 @@ export const CorrectiveActionForm: React.FC<ICorrectiveActionFormProps> = (props
       setNcOptions(options);
 
       if (props.itemId) {
-        const item = await spService.getCorrectiveActionById(props.itemId);
+        const [item, files] = await Promise.all([
+          spService.getCorrectiveActionById(props.itemId),
+          spService.getAttachments('Corrective Actions', props.itemId)
+        ]);
         if (item) {
           setFormData(item);
           setIsEditMode(true);
+          setSavedItemId(props.itemId);
         } else {
           setError('Corrective Action not found');
         }
+        setAttachments(files);
       }
     } catch (err) {
       setError(err.message || 'Failed to load data');
@@ -179,6 +199,20 @@ export const CorrectiveActionForm: React.FC<ICorrectiveActionFormProps> = (props
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  /** Returns only valid next CAPA statuses for the current status (Phase 6) */
+  const allowedCAPAStatusOptions = (): IFluentDropdownOption[] => {
+    const current = formData.CAPAStatus || 'Abierta';
+    const next = CAPA_VALID_TRANSITIONS[current] || [];
+    const allowed = new Set<string>([current, ...next]);
+    return CAPAStatusOptions
+      .filter(opt => allowed.has(opt.key as string))
+      .map(opt => ({ key: opt.key as string, text: opt.text }));
+  };
+
+  /** Phase 6: verification fields only editable when CAPAStatus is En proceso or Cerrada */
+  const canEditVerification = (): boolean =>
+    formData.CAPAStatus === 'En proceso' || formData.CAPAStatus === 'Cerrada';
+
   const validateForm = (): boolean => {
     if (!formData.Title) {
       setError('Title is required');
@@ -206,17 +240,15 @@ export const CorrectiveActionForm: React.FC<ICorrectiveActionFormProps> = (props
     setSaving(true);
 
     try {
-      console.log('Saving formData:', formData);
-      console.log('ResponsiblePerson value:', formData.ResponsiblePerson);
-      console.log('VerifiedBy value:', formData.VerifiedBy);
-      console.log('CCList value:', formData.CCList);
-
       if (isEditMode && props.itemId) {
         await spService.updateCorrectiveAction(props.itemId, formData);
-        setSuccess('Corrective Action updated successfully!');
+        setSuccess('Acción Correctiva actualizada exitosamente');
       } else {
-        await spService.createCorrectiveAction(formData);
-        setSuccess('Corrective Action created successfully!');
+        const newId = await spService.createCorrectiveAction(formData);
+        setSavedItemId(newId);
+        setIsEditMode(true);
+        setAttachments([]);
+        setSuccess('Acción Correctiva creada exitosamente');
       }
 
       setTimeout(() => {
@@ -246,6 +278,34 @@ export const CorrectiveActionForm: React.FC<ICorrectiveActionFormProps> = (props
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const itemId = savedItemId || props.itemId;
+    if (!itemId) {
+      setError('Guarda el registro primero antes de adjuntar archivos');
+      return;
+    }
+
+    setUploadingFile(true);
+    setError('');
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const buffer = await file.arrayBuffer();
+        await spService.addAttachment('Corrective Actions', itemId, file.name, buffer);
+      }
+      const updated = await spService.getAttachments('Corrective Actions', itemId);
+      setAttachments(updated);
+    } catch (err) {
+      setError(err.message || 'Error al subir el archivo');
+    } finally {
+      setUploadingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   if (loading) {
     return (
       <Stack horizontalAlign="center" verticalAlign="center" styles={{ root: { padding: 50 } }}>
@@ -256,30 +316,32 @@ export const CorrectiveActionForm: React.FC<ICorrectiveActionFormProps> = (props
 
   return (
     <Stack tokens={stackTokens} styles={{ root: { padding: 20, maxWidth: 1200 } }}>
-      <h2>{isEditMode ? 'Edit Corrective Action' : 'New Corrective Action'}</h2>
+      <h2>{isEditMode ? 'Editar Acción Correctiva' : 'Nueva Acción Correctiva'}</h2>
 
       {error && <MessageBar messageBarType={MessageBarType.error} onDismiss={() => setError('')}>{error}</MessageBar>}
       {success && <MessageBar messageBarType={MessageBarType.success} onDismiss={() => setSuccess('')}>{success}</MessageBar>}
 
       {/* Basic Information */}
-      <Separator>Basic Information</Separator>
+      <Separator>Información Básica</Separator>
       <Stack tokens={sectionTokens}>
         <Stack horizontal tokens={sectionTokens}>
           <Stack.Item grow={1}>
             <FormTextField
-              label="Title"
+              label="Título"
               value={formData.Title}
               onChange={(value) => updateField('Title', value)}
               required={true}
             />
           </Stack.Item>
           <Stack.Item grow={1}>
+            {/* Phase 6: CAPA status lifecycle enforcement */}
             <FormDropdown
-              label="Status"
+              label="Estado"
               selectedKey={formData.Status}
-              options={CAPAStatusOptions}
+              options={isEditMode ? allowedCAPAStatusOptions() : [{ key: 'Abierta', text: 'Abierta' }]}
               onChange={(value) => updateField('Status', value)}
               required={true}
+              disabled={!isEditMode}
             />
           </Stack.Item>
         </Stack>
@@ -381,7 +443,7 @@ export const CorrectiveActionForm: React.FC<ICorrectiveActionFormProps> = (props
       </Stack>
 
       {/* Issue Description & Analysis */}
-      <Separator>Issue Description & Root Cause Analysis</Separator>
+      <Separator>Descripción del Problema y Análisis de Causa Raíz</Separator>
       <Stack tokens={sectionTokens}>
         <FormTextField
           label="Issue Description"
@@ -474,7 +536,7 @@ export const CorrectiveActionForm: React.FC<ICorrectiveActionFormProps> = (props
       </Stack>
 
       {/* Action Plan */}
-      <Separator>Action Plan</Separator>
+      <Separator>Plan de Acción</Separator>
       <Stack tokens={sectionTokens}>
         <ActionPlanStep
           stepNumber={1}
@@ -569,30 +631,34 @@ export const CorrectiveActionForm: React.FC<ICorrectiveActionFormProps> = (props
       </Stack>
 
       {/* Verification & Audit */}
-      <Separator>Verification & Audit</Separator>
+      <Separator>Verificación y Auditoría</Separator>
       <Stack tokens={sectionTokens}>
+        {/* Phase 6: verification fields only editable when status ≥ En proceso */}
         <FormTextField
-          label="Action Effectiveness Verification"
+          label="Verificación de Efectividad de Acciones"
           value={formData.ActionEffectivenessVerification}
           onChange={(value) => updateField('ActionEffectivenessVerification', value)}
           multiline={true}
           rows={3}
+          disabled={!canEditVerification()}
         />
 
         <FormDatePicker
-          label="Action Effectiveness Verification Date"
+          label="Fecha de Verificación de Efectividad"
           value={formData.ActionEffectivenessVerificationDate}
           onChange={(date) => updateField('ActionEffectivenessVerificationDate', date)}
+          disabled={!canEditVerification()}
         />
 
         <FormTextField
-          label="QA Auditor"
+          label="Auditor QA"
           value={formData.QAAuditor}
           onChange={(value) => updateField('QAAuditor', value)}
+          disabled={!canEditVerification()}
         />
 
         <FormTextField
-          label="Comments"
+          label="Comentarios"
           value={formData.Comments}
           onChange={(value) => updateField('Comments', value)}
           multiline={true}
@@ -601,11 +667,11 @@ export const CorrectiveActionForm: React.FC<ICorrectiveActionFormProps> = (props
       </Stack>
 
       {/* Additional Information */}
-      <Separator>Additional Information</Separator>
+      <Separator>Información Adicional</Separator>
       <Stack tokens={sectionTokens}>
         <PeoplePicker
           context={props.context as any}
-          titleText="CC List"
+          titleText="Lista CC"
           personSelectionLimit={10}
           showtooltip={true}
           required={false}
@@ -626,22 +692,24 @@ export const CorrectiveActionForm: React.FC<ICorrectiveActionFormProps> = (props
           webAbsoluteUrl={props.context.pageContext.web.absoluteUrl}
         />
 
+        {/* Phase 6: CAPA status lifecycle enforcement */}
         <FormDropdown
-          label="CAPA Status"
+          label="Estado CAPA"
           selectedKey={formData.CAPAStatus}
-          options={CAPAStatusOptions}
+          options={isEditMode ? allowedCAPAStatusOptions() : [{ key: 'Abierta', text: 'Abierta' }]}
           onChange={(value) => updateField('CAPAStatus', value)}
+          disabled={!isEditMode}
         />
 
         <ChoiceGroup
-          label="Is Risk Already Identified?"
+          label="¿Riesgo ya identificado?"
           selectedKey={formData.IsRiskAlreadyIdentified}
           options={yesNoOptions}
           onChange={(_, option) => updateField('IsRiskAlreadyIdentified', option?.key || '')}
         />
 
         <FormTextField
-          label="Update Risk Analysis Matrix"
+          label="Actualizar Matriz de Análisis de Riesgos"
           value={formData.UpdateRiskAnalysisMatrix}
           onChange={(value) => updateField('UpdateRiskAnalysisMatrix', value)}
           multiline={true}
@@ -649,11 +717,59 @@ export const CorrectiveActionForm: React.FC<ICorrectiveActionFormProps> = (props
         />
       </Stack>
 
+      {/* ── Archivos Adjuntos ─────────────────────────────────────────────────── */}
+      <Separator>Archivos Adjuntos</Separator>
+      <Stack tokens={sectionTokens}>
+        {!(savedItemId || props.itemId) && (
+          <Text styles={{ root: { color: '#605e5c', fontStyle: 'italic' } }}>
+            Guarda el registro primero para poder adjuntar archivos.
+          </Text>
+        )}
+        {(savedItemId || props.itemId) && (
+          <>
+            <Stack horizontal tokens={{ childrenGap: 8 }} verticalAlign="center">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                style={{ display: 'none' }}
+                onChange={handleFileUpload}
+              />
+              <DefaultButton
+                iconProps={{ iconName: 'Attach' }}
+                text="Adjuntar archivo"
+                onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                disabled={uploadingFile || saving}
+              />
+              {uploadingFile && <Spinner size={SpinnerSize.small} label="Subiendo..." />}
+            </Stack>
+
+            {attachments.length > 0 && (
+              <Stack tokens={{ childrenGap: 6 }}>
+                {attachments.map((att, idx) => (
+                  <Stack key={idx} horizontal tokens={{ childrenGap: 8 }} verticalAlign="center">
+                    <Icon iconName="Attach" styles={{ root: { color: '#0078d4' } }} />
+                    <Link href={att.ServerRelativeUrl} target="_blank">
+                      {att.FileName}
+                    </Link>
+                  </Stack>
+                ))}
+              </Stack>
+            )}
+            {attachments.length === 0 && !uploadingFile && (
+              <Text styles={{ root: { color: '#605e5c', fontStyle: 'italic' } }}>
+                Sin archivos adjuntos.
+              </Text>
+            )}
+          </>
+        )}
+      </Stack>
+
       {/* Action Buttons */}
       <Stack horizontal tokens={sectionTokens} horizontalAlign="end" styles={{ root: { marginTop: 20 } }}>
-        <DefaultButton text="Cancel" onClick={handleCancel} disabled={saving} />
+        <DefaultButton text="Cancelar" onClick={handleCancel} disabled={saving} />
         <PrimaryButton
-          text={isEditMode ? 'Update' : 'Submit'}
+          text={isEditMode ? 'Actualizar' : 'Registrar'}
           onClick={handleSubmitClick}
           disabled={saving}
         />
@@ -665,8 +781,8 @@ export const CorrectiveActionForm: React.FC<ICorrectiveActionFormProps> = (props
         onDismiss={() => setShowConfirmDialog(false)}
         dialogContentProps={{
           type: DialogType.normal,
-          title: 'Confirm Submission',
-          subText: `Are you sure you want to ${isEditMode ? 'update' : 'create'} this Corrective Action?`
+          title: 'Confirmar',
+          subText: `¿Desea ${isEditMode ? 'actualizar' : 'registrar'} esta Acción Correctiva?`
         }}
       >
         <DialogFooter>
