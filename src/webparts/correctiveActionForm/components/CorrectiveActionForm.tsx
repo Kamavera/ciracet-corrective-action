@@ -135,7 +135,7 @@ export const CorrectiveActionForm: React.FC<ICorrectiveActionFormProps> = (props
       if (props.itemId) {
         const [item, files] = await Promise.all([
           spService.getCorrectiveActionById(props.itemId),
-          spService.getAttachments('Corrective Actions', props.itemId)
+          spService.getAttachments('Tabla de Acciones Correctivas', props.itemId)
         ]);
         if (item) {
           setFormData(item);
@@ -294,9 +294,9 @@ export const CorrectiveActionForm: React.FC<ICorrectiveActionFormProps> = (props
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const buffer = await file.arrayBuffer();
-        await spService.addAttachment('Corrective Actions', itemId, file.name, buffer);
+        await spService.addAttachment('Tabla de Acciones Correctivas', itemId, file.name, buffer);
       }
-      const updated = await spService.getAttachments('Corrective Actions', itemId);
+      const updated = await spService.getAttachments('Tabla de Acciones Correctivas', itemId);
       setAttachments(updated);
     } catch (err) {
       setError(err.message || 'Error al subir el archivo');

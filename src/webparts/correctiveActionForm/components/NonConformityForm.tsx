@@ -98,7 +98,7 @@ export const NonConformityForm: React.FC<INonConformityFormProps> = (props) => {
     try {
       const [item, files] = await Promise.all([
         spService.getNonConformityById(props.itemId),
-        spService.getAttachments('Non Conformities', props.itemId)
+        spService.getAttachments('Tabla de No Conformidades', props.itemId)
       ]);
       if (item) {
         setFormData(item);
@@ -234,9 +234,9 @@ export const NonConformityForm: React.FC<INonConformityFormProps> = (props) => {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const buffer = await file.arrayBuffer();
-        await spService.addAttachment('Non Conformities', itemId, file.name, buffer);
+        await spService.addAttachment('Tabla de No Conformidades', itemId, file.name, buffer);
       }
-      const updated = await spService.getAttachments('Non Conformities', itemId);
+      const updated = await spService.getAttachments('Tabla de No Conformidades', itemId);
       setAttachments(updated);
     } catch (err) {
       setError(err.message || 'Error al subir el archivo');

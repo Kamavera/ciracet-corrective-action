@@ -15,8 +15,8 @@ import {
 } from '../models/ICorrectiveAction';
 
 // SharePoint list names
-const LIST_CA       = 'Corrective Actions';
-const LIST_NC       = 'Non Conformities';
+const LIST_CA       = 'Tabla de Acciones Correctivas';
+const LIST_NC       = 'Tabla de No Conformidades';
 const LIST_HISTORY  = 'Historial';
 
 export class SharePointService {
