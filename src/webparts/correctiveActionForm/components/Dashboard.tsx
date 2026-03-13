@@ -30,8 +30,7 @@ import {
   INonConformity,
   NCStatusOptions,
   CAPAStatusOptions,
-  SeverityOptions,
-  AreaOptions
+  SeverityOptions
 } from '../models/ICorrectiveAction';
 
 export interface IDashboardProps {
@@ -49,11 +48,29 @@ const filterTokens: IStackTokens = { childrenGap: 10 };
 const dropdownStyles: Partial<IDropdownStyles> = { root: { minWidth: 140 } };
 
 const statusColors: Record<string, string> = {
-  'Abierta':       '#d13438',
-  'En análisis':   '#ffaa44',
-  'En ejecución':  '#0078d4',
-  'Cerrada':       '#107c10',
-  'En proceso':    '#0078d4'
+  // NC Status (real SP values)
+  'Not Started': '#d13438',
+  'In progress': '#ffaa44',
+  'Completed':   '#107c10',
+  'Overdue':     '#a4262c',
+  // CA CAPA Status (real SP values)
+  'Open':        '#d13438',
+  'In Process':  '#0078d4',
+  'Closed':      '#107c10'
+};
+
+/** Translate real SP choice values to Spanish UI labels */
+const statusLabel = (status: string): string => {
+  const labels: Record<string, string> = {
+    'Not Started': 'No iniciada',
+    'In progress': 'En progreso',
+    'Completed':   'Completada',
+    'Overdue':     'Vencida',
+    'Open':        'Abierta',
+    'In Process':  'En proceso',
+    'Closed':      'Cerrada'
+  };
+  return labels[status] || status;
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -67,7 +84,7 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => (
     fontWeight: 600,
     whiteSpace: 'nowrap'
   }}>
-    {status}
+    {statusLabel(status)}
   </span>
 );
 
@@ -178,12 +195,12 @@ export const Dashboard: React.FC<IDashboardProps> = (props) => {
   // ── KPIs ────────────────────────────────────────────────────────────────────
   const ncKpis = React.useMemo(() => {
     const total    = ncItems.length;
-    const open     = ncItems.filter(n => n.Status === 'Abierta').length;
-    const analysis = ncItems.filter(n => n.Status === 'En análisis').length;
-    const closed   = ncItems.filter(n => n.Status === 'Cerrada').length;
+    const open     = ncItems.filter(n => n.Status === 'Not Started').length;
+    const analysis = ncItems.filter(n => n.Status === 'In progress').length;
+    const closed   = ncItems.filter(n => n.Status === 'Completed').length;
 
     const closedWithDates = ncItems.filter(n =>
-      n.Status === 'Cerrada' && n.TargetResolutionDate && n.ClosureDate
+      n.Status === 'Completed' && n.TargetResolutionDate && n.ClosureDate
     );
     const onTime = closedWithDates.length > 0
       ? Math.round(
@@ -265,7 +282,7 @@ export const Dashboard: React.FC<IDashboardProps> = (props) => {
       onRender: (item: INonConformity) => {
         if (!item.TargetResolutionDate) return '-';
         const d = new Date(item.TargetResolutionDate);
-        const overdue = d < new Date() && item.Status !== 'Cerrada';
+        const overdue = d < new Date() && item.Status !== 'Completed';
         return (
           <span style={{ color: overdue ? '#d13438' : 'inherit', fontWeight: overdue ? 600 : 400 }}>
             {d.toLocaleDateString('es-PR')}
@@ -329,7 +346,7 @@ export const Dashboard: React.FC<IDashboardProps> = (props) => {
       onRender: (item: ICorrectiveAction) => {
         if (!item.DueDate) return '-';
         const d = new Date(item.DueDate);
-        const overdue = d < new Date() && item.CAPAStatus !== 'Cerrada';
+        const overdue = d < new Date() && item.CAPAStatus !== 'Closed';
         return (
           <span style={{ color: overdue ? '#d13438' : 'inherit', fontWeight: overdue ? 600 : 400 }}>
             {d.toLocaleDateString('es-PR')}
@@ -431,13 +448,6 @@ export const Dashboard: React.FC<IDashboardProps> = (props) => {
               options={[{ key: '', text: 'Todas las severidades' }, ...SeverityOptions]}
               styles={dropdownStyles}
               onChange={(_, opt) => setFilterSeverity(opt ? String(opt.key) : '')}
-            />
-            <Dropdown
-              placeholder="Área"
-              selectedKey={filterArea || undefined}
-              options={[{ key: '', text: 'Todas las áreas' }, ...AreaOptions]}
-              styles={dropdownStyles}
-              onChange={(_, opt) => setFilterArea(opt ? String(opt.key) : '')}
             />
           </>
         )}
