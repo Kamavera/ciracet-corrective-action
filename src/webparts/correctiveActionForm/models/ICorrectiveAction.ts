@@ -1,17 +1,23 @@
 // ─── Lifecycle States ────────────────────────────────────────────────────────
 
-/** NC lifecycle: Abierta → En análisis → En ejecución → Cerrada */
-export type NCStatus = 'Abierta' | 'En análisis' | 'En ejecución' | 'Cerrada';
+/**
+ * NC lifecycle — keys must match the actual SharePoint "Status" Choice field values.
+ * SP values: 'Not Started' | 'In progress' | 'Completed' | 'Overdue'
+ */
+export type NCStatus = 'Not Started' | 'In progress' | 'Completed' | 'Overdue';
 
-/** CA status aligned with NC lifecycle */
-export type CAPAStatusValue = 'Abierta' | 'En proceso' | 'Cerrada';
+/**
+ * CA CAPA status — keys must match the actual SharePoint "CAPAStatus" Choice field values.
+ * SP values: 'Open' | 'In Process' | 'Closed'
+ */
+export type CAPAStatusValue = 'Open' | 'In Process' | 'Closed';
 
 /** Valid next states for each NC status (lifecycle enforcement — Phase 6) */
 export const NC_VALID_TRANSITIONS: Record<NCStatus, NCStatus[]> = {
-  'Abierta':       ['En análisis'],
-  'En análisis':   ['En ejecución'],
-  'En ejecución':  ['Cerrada'],
-  'Cerrada':       []
+  'Not Started': ['In progress'],
+  'In progress': ['Completed'],
+  'Completed':   [],
+  'Overdue':     ['In progress']
 };
 
 // ─── Catalog Constants ────────────────────────────────────────────────────────
@@ -21,53 +27,34 @@ export interface IDropdownOption {
   text: string;
 }
 
+/** NC Status options — keys are real SP choice values, text is Spanish UI label */
 export const NCStatusOptions: IDropdownOption[] = [
-  { key: 'Abierta',       text: 'Abierta' },
-  { key: 'En análisis',   text: 'En análisis' },
-  { key: 'En ejecución',  text: 'En ejecución' },
-  { key: 'Cerrada',       text: 'Cerrada' }
+  { key: 'Not Started', text: 'No iniciada' },
+  { key: 'In progress', text: 'En progreso' },
+  { key: 'Completed',   text: 'Completada' },
+  { key: 'Overdue',     text: 'Vencida' }
 ];
 
+/** CAPA Status options — keys are real SP choice values, text is Spanish UI label */
 export const CAPAStatusOptions: IDropdownOption[] = [
-  { key: 'Abierta',    text: 'Abierta' },
-  { key: 'En proceso', text: 'En proceso' },
-  { key: 'Cerrada',    text: 'Cerrada' }
+  { key: 'Open',       text: 'Abierta' },
+  { key: 'In Process', text: 'En proceso' },
+  { key: 'Closed',     text: 'Cerrada' }
 ];
 
+/** Severity options — keys match SP "SeverityofNC" Choice field values */
 export const SeverityOptions: IDropdownOption[] = [
-  { key: 'Baja',     text: 'Baja' },
-  { key: 'Media',    text: 'Media' },
-  { key: 'Alta',     text: 'Alta' },
-  { key: 'Crítica',  text: 'Crítica' }
+  { key: 'Critical', text: 'Crítica' },
+  { key: 'Major',    text: 'Mayor' },
+  { key: 'Minor',    text: 'Menor' }
 ];
 
+/** NC Type options — keys match SP "TypeofAction" Choice field values */
 export const NCTypeOptions: IDropdownOption[] = [
-  { key: 'Interna',         text: 'Interna' },
-  { key: 'Externa',         text: 'Externa' },
-  { key: 'De auditoría',    text: 'De auditoría' },
-  { key: 'De proceso',      text: 'De proceso' },
-  { key: 'De producto',     text: 'De producto' }
-];
-
-export const AreaOptions: IDropdownOption[] = [
-  { key: 'Calidad',         text: 'Calidad' },
-  { key: 'Producción',      text: 'Producción' },
-  { key: 'Logística',       text: 'Logística' },
-  { key: 'Compras',         text: 'Compras' },
-  { key: 'Recursos Humanos',text: 'Recursos Humanos' },
-  { key: 'Tecnología',      text: 'Tecnología' },
-  { key: 'Administración',  text: 'Administración' },
-  { key: 'Otro',            text: 'Otro' }
-];
-
-export const ProcessOptions: IDropdownOption[] = [
-  { key: 'Gestión de Calidad',        text: 'Gestión de Calidad' },
-  { key: 'Gestión de Proveedores',    text: 'Gestión de Proveedores' },
-  { key: 'Control de Documentos',     text: 'Control de Documentos' },
-  { key: 'Auditoría Interna',         text: 'Auditoría Interna' },
-  { key: 'Mejora Continua',           text: 'Mejora Continua' },
-  { key: 'Satisfacción del Cliente',  text: 'Satisfacción del Cliente' },
-  { key: 'Otro',                      text: 'Otro' }
+  { key: 'Internal Audit',     text: 'Auditoría Interna' },
+  { key: 'Customer Complaint', text: 'Queja de Cliente' },
+  { key: 'Process',            text: 'Proceso' },
+  { key: 'Documentation',      text: 'Documentación' }
 ];
 
 // ─── Non Conformity ───────────────────────────────────────────────────────────
@@ -77,23 +64,31 @@ export interface INonConformity {
   Title: string;
   /** Auto-generated: "NC-XXXXXX" */
   ReferenceID: string;
-  /** Classification */
+  /** Classification — stored in SP field "TypeofAction" */
   NCType: string;
-  Area: string;
-  Process: string;
+  /** UI-only — does not exist as a column in the NC SharePoint list */
+  Area?: string;
+  /** UI-only — does not exist as a column in the NC SharePoint list */
+  Process?: string;
   Severity: string;
-  /** Free-text description of the detected issue */
+  /** Free-text description of the detected issue — stored in SP field "Description" */
   IssueDescription: string;
-  PlaceOfNC: string;
-  /** SharePoint user ID string */
+  /** UI-only — does not exist as a column in the NC SharePoint list */
+  PlaceOfNC?: string;
+  /** SharePoint user ID string — stored in SP UserMulti field "ReportedBy0" */
   ReportedBy: string;
+  /** Stored in the SP DateTime field whose internal name is "ReportedBy" */
   ReportedDate: Date | null;
   /** Primary responsible person — SharePoint user ID string */
   AssignedTo: string;
   TargetResolutionDate: Date | null;
+  /** Stored in SP field "ResolutionDateExtension" */
   ClosureDate: Date | null;
+  /** Stored in SP field "ActionEffectivenessVerification" */
   VerificationResult: string;
+  /** SP "Status" Choice field — values: 'Not Started' | 'In progress' | 'Completed' | 'Overdue' */
   Status: NCStatus;
+  /** Stored in SP field "ResolutionTargetDateExtensionReq" */
   Comments: string;
   // Cause & Effect (populated from corrective action analysis)
   CauseAndEffectAnalysis1: string;

@@ -24,8 +24,6 @@ import {
   INonConformity,
   NCStatusOptions,
   NCTypeOptions,
-  AreaOptions,
-  ProcessOptions,
   SeverityOptions,
   NC_VALID_TRANSITIONS,
   NCStatus,
@@ -61,7 +59,7 @@ const emptyNC = (): INonConformity => ({
   TargetResolutionDate: null,
   ClosureDate: null,
   VerificationResult: '',
-  Status: 'Abierta',
+  Status: 'Not Started',
   Comments: '',
   CauseAndEffectAnalysis1: '',
   CauseAndEffectAnalysis2: '',
@@ -140,10 +138,6 @@ export const NonConformityForm: React.FC<INonConformityFormProps> = (props) => {
       setError('El Tipo de NC es obligatorio');
       return false;
     }
-    if (!formData.Area) {
-      setError('El Área es obligatoria');
-      return false;
-    }
     if (!formData.Severity) {
       setError('La Severidad es obligatoria');
       return false;
@@ -193,7 +187,7 @@ export const NonConformityForm: React.FC<INonConformityFormProps> = (props) => {
         // Record creation history
         await spService.addHistoryEntry({
           NCId: newId,
-          Change: 'Registro creado — Estado: Abierta',
+          Change: 'Registro creado — Estado: Not Started',
           User: currentUser,
           Date: new Date(),
           Comments: formData.Comments || ''
@@ -296,7 +290,7 @@ export const NonConformityForm: React.FC<INonConformityFormProps> = (props) => {
             <FormDropdown
               label="Estado"
               selectedKey={formData.Status}
-              options={isEditMode ? allowedStatusOptions() : [{ key: 'Abierta', text: 'Abierta' }]}
+              options={isEditMode ? allowedStatusOptions() : [{ key: 'Not Started', text: 'No iniciada' }]}
               onChange={(value) => updateField('Status', value)}
               required={true}
               disabled={!isEditMode}
@@ -329,22 +323,19 @@ export const NonConformityForm: React.FC<INonConformityFormProps> = (props) => {
 
         <Stack horizontal tokens={sectionTokens}>
           <Stack.Item grow={1}>
-            <FormDropdown
+            <FormTextField
               label="Área"
-              selectedKey={formData.Area}
-              options={AreaOptions}
+              value={formData.Area || ''}
               onChange={(value) => updateField('Area', value)}
-              required={true}
-              placeholder="Seleccionar área"
+              placeholder="Área donde se detectó (informativo)"
             />
           </Stack.Item>
           <Stack.Item grow={1}>
-            <FormDropdown
+            <FormTextField
               label="Proceso"
-              selectedKey={formData.Process}
-              options={ProcessOptions}
+              value={formData.Process || ''}
               onChange={(value) => updateField('Process', value)}
-              placeholder="Seleccionar proceso"
+              placeholder="Proceso involucrado (informativo)"
             />
           </Stack.Item>
         </Stack>
@@ -454,8 +445,8 @@ export const NonConformityForm: React.FC<INonConformityFormProps> = (props) => {
         />
       </Stack>
 
-      {/* ── Cierre y Verificación (solo en edición cuando estado ≥ En ejecución) ── */}
-      {isEditMode && (formData.Status === 'En ejecución' || formData.Status === 'Cerrada') && (
+      {/* ── Cierre y Verificación (solo en edición cuando estado ≥ Completada / Vencida) ── */}
+      {isEditMode && (formData.Status === 'Completed' || formData.Status === 'Overdue') && (
         <>
           <Separator>Cierre y Verificación</Separator>
           <Stack tokens={sectionTokens}>

@@ -47,17 +47,17 @@ const yesNoOptions: IChoiceGroupOption[] = [
   { key: 'NO', text: 'NO' }
 ];
 
-/** Valid CAPA next-state transitions (Phase 6) */
+/** Valid CAPA next-state transitions (Phase 6) — keys match real SP CAPAStatus choice values */
 const CAPA_VALID_TRANSITIONS: Record<string, string[]> = {
-  'Abierta':    ['En proceso'],
-  'En proceso': ['Cerrada'],
-  'Cerrada':    []
+  'Open':       ['In Process'],
+  'In Process': ['Closed'],
+  'Closed':     []
 };
 
 export const CorrectiveActionForm: React.FC<ICorrectiveActionFormProps> = (props) => {
   const [formData, setFormData] = React.useState<ICorrectiveAction>({
     Title: '',
-    Status: 'Abierta',
+    Status: 'Not Started',
     ReferenceID: '',
     NCReportNumber: '',
     PlaceOfNC: '',
@@ -100,7 +100,7 @@ export const CorrectiveActionForm: React.FC<ICorrectiveActionFormProps> = (props
     QAAuditor: '',
     Comments: '',
     CCList: '',
-    CAPAStatus: 'Abierta',
+    CAPAStatus: 'Open',
     IsRiskAlreadyIdentified: '',
     UpdateRiskAnalysisMatrix: ''
   });
@@ -201,7 +201,7 @@ export const CorrectiveActionForm: React.FC<ICorrectiveActionFormProps> = (props
 
   /** Returns only valid next CAPA statuses for the current status (Phase 6) */
   const allowedCAPAStatusOptions = (): IFluentDropdownOption[] => {
-    const current = formData.CAPAStatus || 'Abierta';
+    const current = formData.CAPAStatus || 'Open';
     const next = CAPA_VALID_TRANSITIONS[current] || [];
     const allowed = new Set<string>([current, ...next]);
     return CAPAStatusOptions
@@ -209,9 +209,9 @@ export const CorrectiveActionForm: React.FC<ICorrectiveActionFormProps> = (props
       .map(opt => ({ key: opt.key as string, text: opt.text }));
   };
 
-  /** Phase 6: verification fields only editable when CAPAStatus is En proceso or Cerrada */
+  /** Phase 6: verification fields only editable when CAPAStatus is In Process or Closed */
   const canEditVerification = (): boolean =>
-    formData.CAPAStatus === 'En proceso' || formData.CAPAStatus === 'Cerrada';
+    formData.CAPAStatus === 'In Process' || formData.CAPAStatus === 'Closed';
 
   const validateForm = (): boolean => {
     if (!formData.Title) {
@@ -338,7 +338,7 @@ export const CorrectiveActionForm: React.FC<ICorrectiveActionFormProps> = (props
             <FormDropdown
               label="Estado"
               selectedKey={formData.Status}
-              options={isEditMode ? allowedCAPAStatusOptions() : [{ key: 'Abierta', text: 'Abierta' }]}
+              options={isEditMode ? allowedCAPAStatusOptions() : [{ key: 'Not Started', text: 'No iniciada' }]}
               onChange={(value) => updateField('Status', value)}
               required={true}
               disabled={!isEditMode}
@@ -696,7 +696,7 @@ export const CorrectiveActionForm: React.FC<ICorrectiveActionFormProps> = (props
         <FormDropdown
           label="Estado CAPA"
           selectedKey={formData.CAPAStatus}
-          options={isEditMode ? allowedCAPAStatusOptions() : [{ key: 'Abierta', text: 'Abierta' }]}
+          options={isEditMode ? allowedCAPAStatusOptions() : [{ key: 'Open', text: 'Abierta' }]}
           onChange={(value) => updateField('CAPAStatus', value)}
           disabled={!isEditMode}
         />

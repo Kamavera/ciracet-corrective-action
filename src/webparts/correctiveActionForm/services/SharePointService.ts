@@ -99,9 +99,9 @@ export class SharePointService {
         .getByTitle(LIST_NC)
         .items
         .select(
-          'Id', 'Title', 'ReferenceID', 'NCType', 'Area', 'Process',
-          'SeverityofNC', 'Status', 'ReportedBy', 'ReportedDate',
-          'AssignedtoId', 'TargetResolutionDate', 'ClosureDate'
+          'Id', 'Title', 'ReferenceID', 'TypeofAction',
+          'SeverityofNC', 'Status', 'ReportedBy', 'ReportedBy0Id',
+          'AssignedtoId', 'TargetResolutionDate', 'ResolutionDateExtension'
         )
         .orderBy('Id', false)
         .top(500)();
@@ -369,20 +369,27 @@ export class SharePointService {
       Id: item.Id,
       Title: item.Title || '',
       ReferenceID: item.ReferenceID || '',
-      NCType: item.NCType || '',
-      Area: item.Area || '',
-      Process: item.Process || '',
+      // SP internal name is "TypeofAction", not "NCType"
+      NCType: item.TypeofAction || '',
+      // Area / Process / PlaceOfNC do not exist as NC list columns — kept optional in model
+      Area: '',
+      Process: '',
+      PlaceOfNC: '',
       Severity: item.SeverityofNC || '',
       IssueDescription: item.Description || item.IssueDescription || '',
-      PlaceOfNC: item.PlaceofNC || '',
-      ReportedBy: item.ReportedBy || '',
-      ReportedDate: item.ReportedDate ? new Date(item.ReportedDate) : null,
+      // "ReportedBy0" is a UserMulti field; SP appends "Id" for the lookup ID
+      ReportedBy: item.ReportedBy0Id ? String(item.ReportedBy0Id) : '',
+      // Confusingly, the DateTime field whose internal name is literally "ReportedBy"
+      ReportedDate: item.ReportedBy ? new Date(item.ReportedBy) : null,
       AssignedTo: item.AssignedtoId ? String(item.AssignedtoId) : '',
       TargetResolutionDate: item.TargetResolutionDate ? new Date(item.TargetResolutionDate) : null,
-      ClosureDate: item.ClosureDate ? new Date(item.ClosureDate) : null,
-      VerificationResult: item.VerificationResult || '',
-      Status: item.Status || 'Abierta',
-      Comments: item.Comments || '',
+      // SP field internal name is "ResolutionDateExtension", not "ClosureDate"
+      ClosureDate: item.ResolutionDateExtension ? new Date(item.ResolutionDateExtension) : null,
+      // SP field internal name is "ActionEffectivenessVerification"
+      VerificationResult: item.ActionEffectivenessVerification || '',
+      Status: item.Status || 'Not Started',
+      // SP field internal name is "ResolutionTargetDateExtensionReq"
+      Comments: item.ResolutionTargetDateExtensionReq || '',
       CauseAndEffectAnalysis1: item['CauseandEffectAnalysis_x0023_1'] || '',
       CauseAndEffectAnalysis2: item['CauseandEffectAnalysis_x0023_2'] || '',
       CauseAndEffectAnalysis3: item['CauseandEffectAnalysis_x0023_3'] || '',
@@ -393,23 +400,32 @@ export class SharePointService {
   }
 
   private mapFromNonConformity(data: INonConformity): any {
+    const parseUserId = (val: string): number | null => {
+      if (!val) return null;
+      return parseInt(val.includes('|') ? val.split('|')[0] : val);
+    };
+
     return {
       Title: data.Title,
       ReferenceID: data.ReferenceID,
-      NCType: data.NCType,
-      Area: data.Area,
-      Process: data.Process,
+      // SP internal name for NCType choice field is "TypeofAction"
+      TypeofAction: data.NCType,
+      // Area, Process, PlaceOfNC do not exist in the NC list — omitted
       SeverityofNC: data.Severity,
       Description: data.IssueDescription,
-      PlaceofNC: data.PlaceOfNC,
-      ReportedBy: data.ReportedBy,
-      ReportedDate: data.ReportedDate ? data.ReportedDate.toISOString() : null,
-      AssignedtoId: data.AssignedTo ? parseInt(data.AssignedTo.includes('|') ? data.AssignedTo.split('|')[0] : data.AssignedTo) : null,
+      // "ReportedBy0" is a UserMulti field — write as { results: [userId] }
+      ReportedBy0Id: { results: data.ReportedBy ? [parseUserId(data.ReportedBy)].filter(id => id !== null) : [] },
+      // Confusingly, the DateTime field whose internal name is "ReportedBy"
+      ReportedBy: data.ReportedDate ? data.ReportedDate.toISOString() : null,
+      AssignedtoId: parseUserId(data.AssignedTo),
       TargetResolutionDate: data.TargetResolutionDate ? data.TargetResolutionDate.toISOString() : null,
-      ClosureDate: data.ClosureDate ? data.ClosureDate.toISOString() : null,
-      VerificationResult: data.VerificationResult,
+      // SP field internal name is "ResolutionDateExtension"
+      ResolutionDateExtension: data.ClosureDate ? data.ClosureDate.toISOString() : null,
+      // SP field internal name is "ActionEffectivenessVerification"
+      ActionEffectivenessVerification: data.VerificationResult,
       Status: data.Status,
-      Comments: data.Comments,
+      // SP field internal name is "ResolutionTargetDateExtensionReq"
+      ResolutionTargetDateExtensionReq: data.Comments,
       'CauseandEffectAnalysis_x0023_1': data.CauseAndEffectAnalysis1,
       'CauseandEffectAnalysis_x0023_2': data.CauseAndEffectAnalysis2,
       'CauseandEffectAnalysis_x0023_3': data.CauseAndEffectAnalysis3,
@@ -423,7 +439,7 @@ export class SharePointService {
     return {
       Id: item.Id,
       Title: item.Title || '',
-      Status: item.Status || 'Abierta',
+      Status: item.Status || 'Not Started',
       ReferenceID: item.ReferenceID || '',
       NCReportNumber: item.Noconformidades ? item.Noconformidades.ReferenceID || '' : '',
       PlaceOfNC: item.PlaceofNC || '',
@@ -474,7 +490,7 @@ export class SharePointService {
       QAAuditor: item.QAAuditorId ? String(item.QAAuditorId) : '',
       Comments: item.Comments || '',
       CCList: item.CCListId && item.CCListId.results ? item.CCListId.results.join(';') : '',
-      CAPAStatus: item.CAPAStatus || 'Abierta',
+      CAPAStatus: item.CAPAStatus || 'Open',
       IsRiskAlreadyIdentified: item['IsRiskAlreadyIdentified_x003f_'] || '',
       UpdateRiskAnalysisMatrix: item['UpdateRiskAnalysisMatrix_x003f_'] || ''
     };
